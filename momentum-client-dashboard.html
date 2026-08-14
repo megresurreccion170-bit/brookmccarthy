@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Momentum — your monthly metrics</title>
+<style>
+  :root {
+    color-scheme: light;
+    --plane:          #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --axis:           #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6;
+    --up:             #006300;
+    --down:           #d03b3b;
+    --wash:           rgba(42,120,214,0.10);
+    --ghost:          rgba(11,11,11,0.04);
+    --tip-bg:         #ffffff;
+    --shadow:         0 1px 2px rgba(11,11,11,0.04), 0 8px 24px rgba(11,11,11,0.06);
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane:          #0d0d0d;
+    --surface-1:      #1a1a19;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --grid:           #2c2c2a;
+    --axis:           #383835;
+    --border:         rgba(255,255,255,0.10);
+    --series-1:       #3987e5;
+    --up:             #0ca30c;
+    --down:           #d03b3b;
+    --wash:           rgba(57,135,229,0.14);
+    --ghost:          rgba(255,255,255,0.06);
+    --tip-bg:         #242422;
+    --shadow:         0 1px 2px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--plane);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 32px 24px 64px; }
+
+  /* ── header ─────────────────────────────────────── */
+  header.top { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 28px; }
+  .brand { font-size: 12px; letter-spacing: .09em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0 0 4px; font-weight: 650; letter-spacing: -.015em; }
+  .sub { color: var(--text-secondary); font-size: 14px; margin: 0; }
+  .head-actions { display: flex; gap: 8px; align-items: center; }
+
+  button {
+    font: inherit; font-size: 13px; color: var(--text-secondary);
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 12px; cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  button:hover { background: var(--ghost); color: var(--text-primary); }
+  button:focus-visible { outline: 2px solid var(--series-1); outline-offset: 2px; }
+  button[aria-pressed="true"], button.on { background: var(--text-primary); color: var(--surface-1); border-color: var(--text-primary); }
+
+  /* ── filter row ─────────────────────────────────── */
+  .filters { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .filters .lab { font-size: 12px; color: var(--text-muted); margin-right: 2px; }
+  .seg { display: inline-flex; background: var(--surface-1); border: 1px solid var(--border); border-radius: 9px; padding: 3px; gap: 2px; }
+  .seg button { border: 0; background: transparent; border-radius: 6px; padding: 5px 11px; }
+  .seg button[aria-pressed="true"] { background: var(--text-primary); color: var(--surface-1); }
+
+  /* ── cards ──────────────────────────────────────── */
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 22px; box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 14px; font-weight: 600; margin: 0 0 2px; letter-spacing: -.005em; }
+  .card .cap { font-size: 12.5px; color: var(--text-muted); margin: 0 0 14px; }
+
+  .grid { display: grid; gap: 16px; }
+  .g-hero { grid-template-columns: minmax(260px, 1fr) 2fr; margin-bottom: 16px; }
+  .g-3 { grid-template-columns: repeat(3, 1fr); margin-bottom: 16px; }
+  .g-2 { grid-template-columns: repeat(2, 1fr); margin-bottom: 16px; }
+  .g-1 { grid-template-columns: 1fr; margin-bottom: 16px; }
+  @media (max-width: 860px) {
+    .g-hero, .g-3, .g-2 { grid-template-columns: 1fr; }
+  }
+
+  /* ── hero + stat tiles ──────────────────────────── */
+  .tile-label { font-size: 12.5px; color: var(--text-secondary); margin: 0 0 8px; }
+  .hero-val { font-size: 52px; line-height: 1.05; font-weight: 650; letter-spacing: -.03em; margin: 0 0 10px; }
+  .tile-val { font-size: 30px; line-height: 1.1; font-weight: 650; letter-spacing: -.02em; margin: 0 0 8px; }
+  .delta { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 550; }
+  .delta .arrow { font-size: 11px; }
+  .delta.up { color: var(--up); }
+  .delta.down { color: var(--down); }
+  .delta .vs { color: var(--text-muted); font-weight: 400; }
+  .spark { margin-top: 12px; }
+  .hero-card { display: flex; flex-direction: column; justify-content: center; }
+
+  /* ── charts ─────────────────────────────────────── */
+  .plot { position: relative; width: 100%; }
+  .plot svg { display: block; width: 100%; overflow: visible; }
+  .tick { font-size: 11px; fill: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .tick.word { font-variant-numeric: normal; }
+  .endlab { font-size: 12px; font-weight: 600; fill: var(--text-primary); }
+
+  .tip {
+    position: absolute; pointer-events: none; opacity: 0; transform: translate(-50%, -100%);
+    background: var(--tip-bg); border: 1px solid var(--border); border-radius: 9px;
+    padding: 8px 11px; box-shadow: var(--shadow); white-space: nowrap;
+    transition: opacity .1s ease; z-index: 5;
+  }
+  .tip .t-when { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
+  .tip .t-row { display: flex; align-items: center; gap: 7px; }
+  .tip .t-key { width: 12px; height: 2px; border-radius: 1px; background: var(--series-1); flex: none; }
+  .tip .t-val { font-size: 15px; font-weight: 650; color: var(--text-primary); }
+  .tip .t-name { font-size: 12px; color: var(--text-secondary); }
+
+  /* ── notes ──────────────────────────────────────── */
+  .notes { display: grid; gap: 14px; }
+  .note-q { font-size: 12px; color: var(--text-muted); margin: 0 0 3px; }
+  .note-a { font-size: 14.5px; color: var(--text-primary); margin: 0; }
+  .chip { display: inline-block; background: var(--wash); color: var(--text-primary); border-radius: 6px; padding: 2px 9px; font-size: 13px; font-weight: 550; }
+
+  /* ── table view ─────────────────────────────────── */
+  #tablewrap { margin-bottom: 16px; }
+  #tablewrap[hidden] { display: none; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--grid); font-variant-numeric: tabular-nums; }
+  th:first-child, td:first-child { text-align: left; font-variant-numeric: normal; }
+  thead th { font-size: 11.5px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+  tbody th { font-weight: 550; color: var(--text-primary); }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: var(--ghost); }
+
+  footer.foot { margin-top: 28px; font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="brand">Momentum</div>
+      <h1>Your monthly numbers</h1>
+      <p class="sub" id="periodline">August 2025 – July 2026 · reported by Sarah Chen</p>
+    </div>
+    <div class="head-actions">
+      <button id="tbtn" aria-pressed="false">Table view</button>
+      <button id="dbtn">Dark</button>
+    </div>
+  </header>
+
+  <div class="filters">
+    <span class="lab">Show</span>
+    <div class="seg" role="group" aria-label="Time range">
+      <button data-range="3" aria-pressed="false">Last 3 months</button>
+      <button data-range="6" aria-pressed="false">Last 6 months</button>
+      <button data-range="12" aria-pressed="true">Last 12 months</button>
+    </div>
+  </div>
+
+  <!-- hero + revenue trend -->
+  <div class="grid g-hero">
+    <div class="card hero-card">
+      <p class="tile-label">Revenue, most recent month</p>
+      <p class="hero-val" id="heroVal">$21,300</p>
+      <span class="delta up" id="heroDelta"></span>
+    </div>
+    <div class="card">
+      <h2>Revenue</h2>
+      <p class="cap">Month by month. Hover for any month's figure.</p>
+      <div class="plot" id="p-revenue"></div>
+    </div>
+  </div>
+
+  <!-- KPI row -->
+  <div class="grid g-3">
+    <div class="card">
+      <p class="tile-label">Inquiries</p>
+      <p class="tile-val" id="v-inq"></p>
+      <span class="delta" id="d-inq"></span>
+      <div class="spark plot" id="s-inq"></div>
+    </div>
+    <div class="card">
+      <p class="tile-label">Unique web visitors</p>
+      <p class="tile-val" id="v-vis"></p>
+      <span class="delta" id="d-vis"></span>
+      <div class="spark plot" id="s-vis"></div>
+    </div>
+    <div class="card">
+      <p class="tile-label">Email list size</p>
+      <p class="tile-val" id="v-lst"></p>
+      <span class="delta" id="d-lst"></span>
+      <div class="spark plot" id="s-lst"></div>
+    </div>
+  </div>
+
+  <!-- two-up -->
+  <div class="grid g-2">
+    <div class="card">
+      <h2>Inquiries</h2>
+      <p class="cap">People who reached out about working with you.</p>
+      <div class="plot" id="p-inq"></div>
+    </div>
+    <div class="card">
+      <h2>Unique web visitors</h2>
+      <p class="cap">Distinct people who landed on your site.</p>
+      <div class="plot" id="p-vis"></div>
+    </div>
+  </div>
+
+  <!-- list growth -->
+  <div class="grid g-1">
+    <div class="card">
+      <h2>Email list</h2>
+      <p class="cap">Size at the end of each month.</p>
+      <div class="plot" id="p-lst"></div>
+    </div>
+  </div>
+
+  <!-- mood -->
+  <div class="grid g-1">
+    <div class="card">
+      <h2>How the month felt</h2>
+      <p class="cap">Your own answer each month, on a five-point scale.</p>
+      <div class="plot" id="p-mood"></div>
+    </div>
+  </div>
+
+  <!-- notes -->
+  <div class="grid g-2">
+    <div class="card">
+      <h2>Your words this month</h2>
+      <p class="cap">From your July form.</p>
+      <div class="notes">
+        <div>
+          <p class="note-q">Focus for next month — what you're selling</p>
+          <p class="note-a">Launching the group programme. Early-bird opens 12 August, cart closes the 26th.</p>
+        </div>
+        <div>
+          <p class="note-q">What you want to be held accountable for</p>
+          <p class="note-a">Sending the weekly email every Tuesday without fail.</p>
+        </div>
+        <div>
+          <p class="note-q">Holidays planned</p>
+          <p class="note-a">A week in Byron, 15–22 September.</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Momentum support you used</h2>
+      <p class="cap">What you told us you leaned on.</p>
+      <div class="notes">
+        <div>
+          <p class="note-q">July</p>
+          <p class="note-a"><span class="chip">WhatsApp chat</span></p>
+        </div>
+        <div>
+          <p class="note-q">June</p>
+          <p class="note-a"><span class="chip">Group call</span></p>
+        </div>
+        <div>
+          <p class="note-q">May</p>
+          <p class="note-a"><span class="chip">1:1 session</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- table -->
+  <div id="tablewrap" hidden>
+    <div class="card">
+      <h2>All your figures</h2>
+      <p class="cap">Every value on this page, as numbers.</p>
+      <table>
+        <caption class="sr">Monthly metrics</caption>
+        <thead>
+          <tr><th scope="col">Month</th><th scope="col">Revenue</th><th scope="col">Inquiries</th><th scope="col">Web visitors</th><th scope="col">Email list</th><th scope="col">How it felt</th></tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer class="foot">
+    Demo dashboard built from the Momentum monthly form. Figures shown are sample data, not a real client.
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ── sample data ───────────────────────────────────────────────────────────
+  var MOODS = ["Struggling", "Stretched", "Steady", "Good", "Flying"];
+  var DATA = [
+    { m: "Aug 2025", s: "Aug", rev:  8200, inq:  4, vis:  612, lst:  840, mood: 3 },
+    { m: "Sep 2025", s: "Sep", rev:  9450, inq:  6, vis:  731, lst:  892, mood: 3 },
+    { m: "Oct 2025", s: "Oct", rev: 11200, inq:  7, vis:  845, lst:  964, mood: 4 },
+    { m: "Nov 2025", s: "Nov", rev: 14800, inq:  9, vis: 1120, lst: 1058, mood: 4 },
+    { m: "Dec 2025", s: "Dec", rev:  7600, inq:  3, vis:  690, lst: 1081, mood: 2 },
+    { m: "Jan 2026", s: "Jan", rev: 10400, inq:  8, vis: 1240, lst: 1163, mood: 3 },
+    { m: "Feb 2026", s: "Feb", rev: 13900, inq: 10, vis: 1305, lst: 1224, mood: 4 },
+    { m: "Mar 2026", s: "Mar", rev: 16200, inq: 11, vis: 1480, lst: 1298, mood: 4 },
+    { m: "Apr 2026", s: "Apr", rev: 12100, inq:  6, vis: 1190, lst: 1341, mood: 2 },
+    { m: "May 2026", s: "May", rev: 18400, inq: 13, vis: 1620, lst: 1417, mood: 5 },
+    { m: "Jun 2026", s: "Jun", rev: 17100, inq: 12, vis: 1735, lst: 1486, mood: 4 },
+    { m: "Jul 2026", s: "Jul", rev: 21300, inq: 14, vis: 1902, lst: 1573, mood: 5 }
+  ];
+
+  var NS = "http://www.w3.org/2000/svg";
+  var range = 12;
+
+  // ── helpers ───────────────────────────────────────────────────────────────
+  function el(tag, attrs) {
+    var n = document.createElementNS(NS, tag);
+    for (var k in attrs) if (attrs[k] !== undefined && attrs[k] !== null) n.setAttribute(k, attrs[k]);
+    return n;
+  }
+  function money(v) { return "$" + Math.round(v).toLocaleString("en-AU"); }
+  function num(v) { return Math.round(v).toLocaleString("en-AU"); }
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function niceTicks(max, count) {
+    var raw = max / count;
+    var mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    var norm = raw / mag;
+    var step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10) * mag;
+    var ticks = [], t = 0;
+    while (t <= max + step * 0.001) { ticks.push(t); t += step; }
+    return ticks;
+  }
+
+  // rounded-top column path: 4px radius at the data end, square at the baseline
+  function colPath(x, y, w, h, r) {
+    r = Math.min(r, w / 2, Math.max(h, 0));
+    if (h <= 0.5) return "M" + x + "," + (y + h) + "h" + w;
+    return "M" + x + "," + (y + h) +
+           "V" + (y + r) +
+           "a" + r + "," + r + " 0 0 1 " + r + "," + (-r) +
+           "h" + (w - 2 * r) +
+           "a" + r + "," + r + " 0 0 1 " + r + "," + r +
+           "V" + (y + h) + "Z";
+  }
+
+  function makeTip(host) {
+    var t = document.createElement("div");
+    t.className = "tip";
+    var when = document.createElement("div"); when.className = "t-when";
+    var row = document.createElement("div"); row.className = "t-row";
+    var key = document.createElement("span"); key.className = "t-key";
+    var val = document.createElement("span"); val.className = "t-val";
+    row.appendChild(key); row.appendChild(val);
+    var name = document.createElement("div"); name.className = "t-name";
+    t.appendChild(when); t.appendChild(row); t.appendChild(name);
+    host.appendChild(t);
+    return {
+      node: t,
+      show: function (x, y, whenTxt, valTxt, nameTxt) {
+        when.textContent = whenTxt;          // untrusted labels → textContent
+        val.textContent = valTxt;
+        name.textContent = nameTxt;
+        t.style.left = x + "px";
+        t.style.top = (y - 10) + "px";
+        t.style.opacity = "1";
+      },
+      hide: function () { t.style.opacity = "0"; }
+    };
+  }
+
+  // ── line chart (single series) ────────────────────────────────────────────
+  function lineChart(host, rows, opts) {
+    host.textContent = "";
+    var W = host.clientWidth || 600, H = opts.height || 200;
+    var pad = { t: 16, r: opts.endLabel === false ? 16 : 54, b: 26, l: 52 };
+    var iw = Math.max(W - pad.l - pad.r, 10), ih = H - pad.t - pad.b;
+    var vals = rows.map(function (d) { return d[opts.key]; });
+    var maxV = Math.max.apply(null, vals), minV = Math.min.apply(null, vals);
+    var base, ticks;
+    if (opts.zeroBase === false) {
+      // clean round ticks bracketing the data, never a stray value like 773
+      var span = (maxV - minV) || maxV || 1;
+      var mag = Math.pow(10, Math.floor(Math.log10(span / 2)));
+      var n = (span / 2) / mag;
+      var step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * mag;
+      base = Math.floor((minV - span * 0.12) / step) * step;
+      var topT = Math.ceil(maxV / step) * step;
+      ticks = [];
+      for (var tv = base; tv <= topT + step * 0.001; tv += step) ticks.push(tv);
+    } else {
+      base = 0;
+      ticks = niceTicks(maxV, 4);
+    }
+    var top = Math.max(ticks[ticks.length - 1], maxV);
+
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img" });
+    svg.appendChild(el("title", {})).textContent = opts.title || "";
+
+    var x = function (i) { return pad.l + (rows.length === 1 ? iw / 2 : i * iw / (rows.length - 1)); };
+    var y = function (v) { return pad.t + ih - (v - base) / (top - base || 1) * ih; };
+
+    // gridlines — solid hairlines, recessive
+    ticks.forEach(function (t) {
+      svg.appendChild(el("line", { x1: pad.l, x2: pad.l + iw, y1: y(t), y2: y(t), stroke: css("--grid"), "stroke-width": 1 }));
+      var lb = el("text", { x: pad.l - 10, y: y(t) + 4, "text-anchor": "end", class: "tick" });
+      lb.textContent = opts.tickFmt ? opts.tickFmt(t) : num(t);
+      svg.appendChild(lb);
+    });
+
+    // area wash + line
+    var dLine = rows.map(function (d, i) { return (i ? "L" : "M") + x(i) + "," + y(d[opts.key]); }).join("");
+    svg.appendChild(el("path", { d: dLine + "L" + x(rows.length - 1) + "," + y(base) + "L" + x(0) + "," + y(base) + "Z", fill: css("--wash"), stroke: "none" }));
+    svg.appendChild(el("path", { d: dLine, fill: "none", stroke: css("--series-1"), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+
+    // x labels
+    rows.forEach(function (d, i) {
+      if (rows.length > 8 && i % 2 !== (rows.length - 1) % 2) return;
+      var lb = el("text", { x: x(i), y: H - 6, "text-anchor": "middle", class: "tick word" });
+      lb.textContent = d.s;
+      svg.appendChild(lb);
+    });
+
+    // endpoint marker + direct label (selective: endpoint only)
+    var last = rows.length - 1;
+    svg.appendChild(el("circle", { cx: x(last), cy: y(rows[last][opts.key]), r: 4.5, fill: css("--series-1"), stroke: css("--surface-1"), "stroke-width": 2 }));
+    if (opts.endLabel !== false) {
+      var e = el("text", { x: x(last) + 11, y: y(rows[last][opts.key]) + 4, class: "endlab" });
+      e.textContent = opts.fmt(rows[last][opts.key]);
+      svg.appendChild(e);
+    }
+
+    // crosshair layer
+    var cross = el("line", { y1: pad.t, y2: pad.t + ih, stroke: css("--axis"), "stroke-width": 1, opacity: 0 });
+    var dot = el("circle", { r: 4.5, fill: css("--series-1"), stroke: css("--surface-1"), "stroke-width": 2, opacity: 0 });
+    svg.appendChild(cross); svg.appendChild(dot);
+    host.appendChild(svg);
+    var tip = makeTip(host);
+
+    var hit = el("rect", { x: pad.l, y: pad.t, width: iw, height: ih, fill: "transparent", tabindex: 0 });
+    svg.appendChild(hit);
+    function at(i) {
+      var d = rows[i];
+      cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("opacity", 1);
+      dot.setAttribute("cx", x(i)); dot.setAttribute("cy", y(d[opts.key])); dot.setAttribute("opacity", 1);
+      tip.show(x(i), y(d[opts.key]), d.m, opts.fmt(d[opts.key]), opts.name);
+    }
+    function off() { cross.setAttribute("opacity", 0); dot.setAttribute("opacity", 0); tip.hide(); }
+    hit.addEventListener("pointermove", function (ev) {
+      var r = svg.getBoundingClientRect();
+      var px = (ev.clientX - r.left) * (W / r.width);
+      var i = Math.max(0, Math.min(rows.length - 1, Math.round((px - pad.l) / (iw / Math.max(rows.length - 1, 1)))));
+      at(i);
+    });
+    hit.addEventListener("pointerleave", off);
+    var fi = rows.length - 1;
+    hit.addEventListener("focus", function () { at(fi); });
+    hit.addEventListener("blur", off);
+    hit.addEventListener("keydown", function (ev) {
+      if (ev.key === "ArrowRight") { fi = Math.min(rows.length - 1, fi + 1); at(fi); ev.preventDefault(); }
+      if (ev.key === "ArrowLeft")  { fi = Math.max(0, fi - 1); at(fi); ev.preventDefault(); }
+    });
+  }
+
+  // ── column chart (single series) ──────────────────────────────────────────
+  function colChart(host, rows, opts) {
+    host.textContent = "";
+    var W = host.clientWidth || 400, H = opts.height || 200;
+    var pad = { t: 18, r: 12, b: 26, l: opts.leftPad || 44 };
+    var iw = Math.max(W - pad.l - pad.r, 10), ih = H - pad.t - pad.b;
+    var maxV = opts.max || Math.max.apply(null, rows.map(function (d) { return d[opts.key]; }));
+    var ticks = opts.ticks || niceTicks(maxV, 3);
+    var top = Math.max(ticks[ticks.length - 1], maxV);
+
+    var band = iw / rows.length;
+    var bw = Math.min(24, band - 8);          // cap thickness, leave the band air
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, height: H, role: "img" });
+    svg.appendChild(el("title", {})).textContent = opts.title || "";
+
+    ticks.forEach(function (t) {
+      var yy = pad.t + ih - (t / (top || 1)) * ih;
+      svg.appendChild(el("line", { x1: pad.l, x2: pad.l + iw, y1: yy, y2: yy, stroke: css("--grid"), "stroke-width": 1 }));
+      var lb = el("text", { x: pad.l - 9, y: yy + 4, "text-anchor": "end", class: "tick" + (opts.wordTicks ? " word" : "") });
+      lb.textContent = opts.tickFmt ? opts.tickFmt(t) : num(t);
+      svg.appendChild(lb);
+    });
+
+    host.appendChild(svg);
+    var tip = makeTip(host);
+    var last = rows.length - 1;
+
+    rows.forEach(function (d, i) {
+      var v = d[opts.key];
+      var h = (v / (top || 1)) * ih;
+      var cx = pad.l + band * i + band / 2;
+      var bx = cx - bw / 2, by = pad.t + ih - h;
+      svg.appendChild(el("path", { d: colPath(bx, by, bw, h, 4), fill: css("--series-1"), opacity: i === last ? 1 : 0.82 }));
+
+      // thin the x labels when the band is too narrow to hold them
+      var every = band < 26 ? 2 : 1;
+      if (i % every === last % every) {
+        var lb = el("text", { x: cx, y: H - 6, "text-anchor": "middle", class: "tick word" });
+        lb.textContent = d.s;
+        svg.appendChild(lb);
+      }
+
+      // hit target ≥24px wide, full plot height, includes the gap
+      var hit = el("rect", { x: cx - Math.max(band, 24) / 2, y: pad.t, width: Math.max(band, 24), height: ih, fill: "transparent", tabindex: 0 });
+      function on() { tip.show(cx, by, d.m, opts.fmt(v), opts.name); }
+      hit.addEventListener("pointerenter", on);
+      hit.addEventListener("focus", on);
+      hit.addEventListener("pointerleave", tip.hide);
+      hit.addEventListener("blur", tip.hide);
+      svg.appendChild(hit);
+    });
+
+    // direct-label the endpoint only
+    if (opts.endLabel !== false) {
+      var v = rows[last][opts.key];
+      var h = (v / (top || 1)) * ih;
+      var cx = pad.l + band * last + band / 2;
+      var e = el("text", { x: cx, y: pad.t + ih - h - 8, "text-anchor": "middle", class: "endlab" });
+      e.textContent = opts.fmt(v);
+      svg.appendChild(e);
+    }
+  }
+
+  // ── sparkline ─────────────────────────────────────────────────────────────
+  function spark(host, rows, key) {
+    host.textContent = "";
+    var W = host.clientWidth || 200, H = 40, p = 5;
+    var vals = rows.map(function (d) { return d[key]; });
+    var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+    var rg = (mx - mn) || 1;
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, height: H, "aria-hidden": "true" });
+    var x = function (i) { return p + (rows.length === 1 ? 0 : i * (W - p * 2) / (rows.length - 1)); };
+    var y = function (v) { return p + (H - p * 2) - (v - mn) / rg * (H - p * 2); };
+    var d = rows.map(function (r, i) { return (i ? "L" : "M") + x(i) + "," + y(r[key]); }).join("");
+    svg.appendChild(el("path", { d: d + "L" + x(rows.length - 1) + "," + H + "L" + x(0) + "," + H + "Z", fill: css("--wash") }));
+    svg.appendChild(el("path", { d: d, fill: "none", stroke: css("--series-1"), "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round", opacity: 0.55 }));
+    svg.appendChild(el("circle", { cx: x(rows.length - 1), cy: y(vals[vals.length - 1]), r: 4, fill: css("--series-1"), stroke: css("--surface-1"), "stroke-width": 2 }));
+    host.appendChild(svg);
+  }
+
+  // ── stat tiles ────────────────────────────────────────────────────────────
+  function setDelta(node, cur, prev, fmt) {
+    var diff = cur - prev;
+    var pct = prev ? Math.round(Math.abs(diff) / prev * 1000) / 10 : 0;
+    node.className = "delta " + (diff >= 0 ? "up" : "down");
+    node.textContent = "";
+    var a = document.createElement("span"); a.className = "arrow"; a.textContent = diff >= 0 ? "▲" : "▼";
+    var t = document.createElement("span"); t.textContent = (diff >= 0 ? "+" : "−") + fmt(Math.abs(diff)) + (prev ? " (" + pct + "%)" : "");
+    var v = document.createElement("span"); v.className = "vs"; v.textContent = "vs last month";
+    node.appendChild(a); node.appendChild(t); node.appendChild(v);
+  }
+
+  // ── render ────────────────────────────────────────────────────────────────
+  function render() {
+    var rows = DATA.slice(Math.max(0, DATA.length - range));
+    var last = rows[rows.length - 1], prev = rows[rows.length - 2] || last;
+
+    document.getElementById("periodline").textContent =
+      rows[0].m + " – " + last.m + " · reported by Sarah Chen";
+
+    document.getElementById("heroVal").textContent = money(last.rev);
+    setDelta(document.getElementById("heroDelta"), last.rev, prev.rev, money);
+
+    document.getElementById("v-inq").textContent = num(last.inq);
+    document.getElementById("v-vis").textContent = num(last.vis);
+    document.getElementById("v-lst").textContent = num(last.lst);
+    setDelta(document.getElementById("d-inq"), last.inq, prev.inq, num);
+    setDelta(document.getElementById("d-vis"), last.vis, prev.vis, num);
+    setDelta(document.getElementById("d-lst"), last.lst, prev.lst, num);
+
+    spark(document.getElementById("s-inq"), rows, "inq");
+    spark(document.getElementById("s-vis"), rows, "vis");
+    spark(document.getElementById("s-lst"), rows, "lst");
+
+    lineChart(document.getElementById("p-revenue"), rows, {
+      key: "rev", name: "Revenue", title: "Revenue by month", height: 208,
+      fmt: money, tickFmt: function (t) { return t >= 1000 ? "$" + (t / 1000) + "k" : "$" + t; }
+    });
+
+    colChart(document.getElementById("p-inq"), rows, {
+      key: "inq", name: "Inquiries", title: "Inquiries by month", height: 196, fmt: num
+    });
+
+    colChart(document.getElementById("p-vis"), rows, {
+      key: "vis", name: "Unique web visitors", title: "Web visitors by month", height: 196,
+      fmt: num, tickFmt: function (t) { return t >= 1000 ? (t / 1000) + "k" : String(t); }
+    });
+
+    lineChart(document.getElementById("p-lst"), rows, {
+      key: "lst", name: "Email list size", title: "Email list size by month", height: 200,
+      fmt: num, zeroBase: false
+    });
+
+    colChart(document.getElementById("p-mood"), rows, {
+      key: "mood", name: "How the month felt", title: "How each month felt", height: 200,
+      max: 5, ticks: [1, 2, 3, 4, 5], wordTicks: true, leftPad: 78, endLabel: false,
+      fmt: function (v) { return MOODS[v - 1]; },
+      tickFmt: function (t) { return t >= 1 ? MOODS[t - 1] : ""; }
+    });
+
+    var tb = document.getElementById("tbody");
+    tb.textContent = "";
+    rows.slice().reverse().forEach(function (d) {
+      var tr = document.createElement("tr");
+      [d.m, money(d.rev), num(d.inq), num(d.vis), num(d.lst), MOODS[d.mood - 1]].forEach(function (cell, i) {
+        var td = document.createElement(i === 0 ? "th" : "td");
+        if (i === 0) td.setAttribute("scope", "row");
+        td.textContent = cell;
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+  }
+
+  // ── controls ──────────────────────────────────────────────────────────────
+  document.querySelectorAll(".seg button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      document.querySelectorAll(".seg button").forEach(function (o) { o.setAttribute("aria-pressed", "false"); });
+      b.setAttribute("aria-pressed", "true");
+      range = parseInt(b.dataset.range, 10);
+      render();
+    });
+  });
+
+  var tbtn = document.getElementById("tbtn");
+  tbtn.addEventListener("click", function () {
+    var open = tbtn.getAttribute("aria-pressed") === "true";
+    tbtn.setAttribute("aria-pressed", String(!open));
+    document.getElementById("tablewrap").hidden = open;
+  });
+
+  var dbtn = document.getElementById("dbtn");
+  dbtn.addEventListener("click", function () {
+    var dark = document.documentElement.dataset.theme === "dark";
+    document.documentElement.dataset.theme = dark ? "light" : "dark";
+    dbtn.textContent = dark ? "Dark" : "Light";
+    render();
+  });
+
+  if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    document.documentElement.dataset.theme = "dark";
+    dbtn.textContent = "Light";
+  }
+
+  var rt;
+  window.addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(render, 120); });
+  render();
+})();
+</script>
+</body>
+</html>
